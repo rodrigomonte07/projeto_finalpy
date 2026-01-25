@@ -8,7 +8,7 @@ CORS(app)
 conexao = mysql.connector.connect(
     host= 'localhost',
     user= 'root',
-    password= '@rroZ101#(07)',
+    password= 'senha',
     database= 'estoque_loja'
 )
 
@@ -107,4 +107,5 @@ def excluir_produto(id):
 
 if __name__ == "__main__" :
     app.run(debug=True)
+
 
