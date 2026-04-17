@@ -1,118 +1,263 @@
-import mysql.connector
-from flask import Flask, jsonify, request
-from  flask_cors import CORS
+# API de Gerenciamento de Estoque - Loja
 
-app = Flask(__name__)
-CORS(app)
+Uma API REST construída com Flask para gerenciar produtos e estoque de uma loja, com suporte a operações CRUD completas.
 
+## 📋 Funcionalidades
+
+- ✅ **Listar todos os produtos** - GET `/produtos`
+- ✅ **Buscar produto por ID** - GET `/produtos/<id>`
+- ✅ **Cadastrar novo produto** - POST `/produtos`
+- ✅ **Atualizar produto** - PATCH `/produtos/<id>`
+- ✅ **Excluir produto** - DELETE `/produtos/<id>`
+
+## 🛠️ Tecnologias Utilizadas
+
+- **Python 3.x**
+- **Flask** - Framework web
+- **Flask-CORS** - Habilitação de CORS
+- **mysql-connector-python** - Conexão com MySQL
+
+## 📦 Instalação
+
+### 1. Clone o repositório
+```bash
+git clone https://github.com/rodrigomonte07/projeto_finalpy.git
+cd projeto_finalpy
+```
+
+### 2. Instale as dependências
+```bash
+pip install -r requirements.txt
+```
+
+Ou instale manualmente:
+```bash
+pip install flask flask-cors mysql-connector-python
+```
+
+### 3. Configure o banco de dados
+
+Certifique-se de ter MySQL instalado e rodando. Atualize as credenciais no arquivo `main.py`:
+
+```python
 conexao = mysql.connector.connect(
-    host= 'localhost',
-    user= 'root',
-    password= '@rroZ101#(07)',
-    database= 'estoque_loja'
+    host='localhost',
+    user='seu_usuario',
+    password='sua_senha',
+    database='estoque_loja'
 )
+```
 
-@app.route("/produtos", methods= ['GET'])
-def ver_estoque():
-    aba = conexao.cursor(dictionary=True)
-    aba.execute("SELECT * FROM produtos")
-    lista_produtos = aba.fetchall()
-    aba.close()
-    
-    return jsonify(lista_produtos)
+### 4. Crie a tabela de produtos
 
-@app.route('/produtos/<int:id>', methods=['GET'])
-def buscar_produto(id):
-    aba = conexao.cursor(dictionary=True)
-    aba.execute("SELECT * FROM produtos WHERE id = %s", (id,))
-    produto = aba.fetchone()
-    aba.close()
-    if not produto:
-        return jsonify({"mensagem": "Produto não encontrado"}), 404
+Execute este comando no MySQL:
 
-    return jsonify(produto)
+```sql
+CREATE DATABASE estoque_loja;
 
-@app.route("/produtos", methods= ['POST'])
-def cadastrar_produto():
-    data = request.get_json()
-    if not data:
-        return jsonify({"erro": "JSON inválido ou vazio"}), 400
+USE estoque_loja;
 
-    nome = data.get('nome')
-    descricao = data.get('descricao')
-    estoque = data.get('estoque')
-    preco = data.get('preco')
+CREATE TABLE produtos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    descricao TEXT,
+    estoque INT NOT NULL,
+    preco DECIMAL(10, 2) NOT NULL
+);
+```
 
-    if not nome or estoque is None or preco is None:
-        return jsonify({"erro": "Dados incompletos"}), 400
+## 🚀 Como Usar
 
-    aba = conexao.cursor(dictionary=True)
-    consulta = f"""
-INSERT INTO produtos (nome, descricao, estoque, preco)
-    VALUES
-        (%s, %s, %s, %s)
-"""
-    aba.execute(consulta, (nome, descricao, estoque, preco))
-    conexao.commit()
-    aba.close()
+### Iniciar o servidor
+```bash
+python main.py
+```
 
-    return jsonify({"mensagem": f"Produto {nome} cadastrado com sucesso!"}), 201
+O servidor estará disponível em `http://localhost:5000`
 
-@app.route("/produtos/<int:id>", methods= ['PATCH'])
-def atualizar_produto(id):
-    data = request.get_json()
-    if not data:
-        return jsonify({"erro": "JSON inválido ou vazio"}), 400
+## 📡 Endpoints da API
 
-    campos = []
-    valores = []
+### 1. Listar todos os produtos
+**GET** `/produtos`
 
-    if 'nome' in data:
-        campos.append("nome = %s")
-        valores.append(data['nome'])
+**Resposta (200):**
+```json
+[
+    {
+        "id": 1,
+        "nome": "Produto 1",
+        "descricao": "Descrição do produto",
+        "estoque": 10,
+        "preco": 25.50
+    }
+]
+```
 
-    if 'descricao' in data:
-        campos.append("descricao = %s")
-        valores.append(data['descricao'])
+---
 
-    if 'estoque' in data:
-        campos.append("estoque = %s")
-        valores.append(data['estoque'])
+### 2. Buscar produto por ID
+**GET** `/produtos/<id>`
 
-    if 'preco' in data:
-        campos.append("preco = %s")
-        valores.append(data['preco'])
+**Parâmetros:**
+- `id` (int, obrigatório) - ID do produto
 
-    if not campos:
-        return jsonify({"mensagem": "Nenhum campo para atualizar"}), 400
+**Resposta (200):**
+```json
+{
+    "id": 1,
+    "nome": "Produto 1",
+    "descricao": "Descrição do produto",
+    "estoque": 10,
+    "preco": 25.50
+}
+```
 
-    valores.append(id)
+**Resposta (404):**
+```json
+{
+    "mensagem": "Produto não encontrado"
+}
+```
 
-    consulta = f"""
-        UPDATE produtos
-        SET {", ".join(campos)}
-        WHERE id = %s
-    """
+---
 
-    aba = conexao.cursor(dictionary=True)
-    aba.execute(consulta, valores)
-    conexao.commit()
-    aba.close()
-    if aba.rowcount == 0:
-        return jsonify({"mensagem": "Produto não encontrado"}), 404
+### 3. Cadastrar novo produto
+**POST** `/produtos`
 
-    return jsonify({"mensagem": "Produto atualizado com sucesso!"}), 200
+**Body (JSON):**
+```json
+{
+    "nome": "Novo Produto",
+    "descricao": "Descrição opcional",
+    "estoque": 15,
+    "preco": 49.99
+}
+```
 
-@app.route("/produtos/<int:id>", methods=['DELETE'])
-def excluir_produto(id):
-    aba = conexao.cursor(dictionary=True)
-    aba.execute("DELETE FROM produtos WHERE id = %s", (id,))
-    conexao.commit()
-    aba.close()
-    if aba.rowcount == 0:
-        return jsonify({"mensagem": "Produto não encontrado"}), 404
+**Campos obrigatórios:** `nome`, `estoque`, `preco`
 
-    return jsonify({"mensagem": "Produto removido com sucesso!"}), 200
+**Resposta (200):**
+```json
+{
+    "mensagem": "Produto Novo Produto cadastrado com sucesso!"
+}
+```
 
-if __name__ == "__main__" :
-    app.run(debug=True)
+**Resposta (400):**
+```json
+{
+    "erro": "Dados incompletos"
+}
+```
+
+---
+
+### 4. Atualizar produto
+**PATCH** `/produtos/<id>`
+
+**Parâmetros:**
+- `id` (int, obrigatório) - ID do produto
+
+**Body (JSON):**
+```json
+{
+    "nome": "Nome Atualizado",
+    "preco": 59.99,
+    "estoque": 20
+}
+```
+
+**Nota:** Você pode atualizar um ou mais campos; apenas os campos enviados serão atualizados.
+
+**Resposta (200):**
+```json
+{
+    "mensagem": "Produto atualizado com sucesso!"
+}
+```
+
+---
+
+### 5. Excluir produto
+**DELETE** `/produtos/<id>`
+
+**Parâmetros:**
+- `id` (int, obrigatório) - ID do produto
+
+**Resposta (200):**
+```json
+{
+    "mensagem": "Produto removido com sucesso!"
+}
+```
+
+---
+
+## 🧪 Testando a API
+
+### Usando cURL
+
+```bash
+# Listar todos os produtos
+curl http://localhost:5000/produtos
+
+# Buscar produto por ID
+curl http://localhost:5000/produtos/1
+
+# Cadastrar novo produto
+curl -X POST http://localhost:5000/produtos \
+  -H "Content-Type: application/json" \
+  -d '{"nome":"Produto Teste","estoque":5,"preco":19.99}'
+
+# Atualizar produto
+curl -X PATCH http://localhost:5000/produtos/1 \
+  -H "Content-Type: application/json" \
+  -d '{"preco":29.99}'
+
+# Deletar produto
+curl -X DELETE http://localhost:5000/produtos/1
+```
+
+### Usando Postman ou Insomnia
+
+Importe a coleção de requests para testar facilmente todos os endpoints.
+
+## ⚠️ Considerações de Segurança
+
+- **Mude a senha padrão** do banco de dados antes de usar em produção
+- **Valide e sanitize** todos os inputs do usuário
+- **Use variáveis de ambiente** para armazenar credenciais sensíveis
+- **Implemente autenticação e autorização** para endpoints de produção
+- **Evite usar `debug=True`** em ambiente de produção
+
+## 📝 Estrutura do Projeto
+
+```
+projeto_finalpy/
+├── main.py           # Arquivo principal com todos os endpoints
+├── README.md         # Este arquivo
+└── requirements.txt  # Dependências do projeto
+```
+
+## 🐛 Possíveis Melhorias
+
+- [ ] Adicionar autenticação JWT
+- [ ] Implementar validação mais robusta de dados
+- [ ] Adicionar paginação aos endpoints
+- [ ] Criar testes unitários
+- [ ] Usar variáveis de ambiente para configuração
+- [ ] Implementar tratamento de erros mais detalhado
+- [ ] Adicionar logging
+- [ ] Criar um arquivo de configuração separado
+
+## 📄 Licença
+
+Este projeto está sob licença MIT.
+
+## 👨‍💻 Autor
+
+Criado por **rodrigomonte07**
+
+---
+
+**Última atualização:** 2026-04-17
